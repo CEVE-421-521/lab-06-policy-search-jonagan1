@@ -1,6 +1,6 @@
 ---
 title: "Lab 6: Policy Search"
-author: "Your Name (netID)"
+author: "Jonathan Gan wg18"
 jupyter: julia-1.10
 date: 2024-03-01
 week: 7
@@ -53,5 +53,8 @@ Plots.default(; margin=5Plots.mm)
 ```{julia}
 function objective_function(a::AbstractFloat)
     return true # PLACEHOLDER
+
+
+    
 end
 ```
