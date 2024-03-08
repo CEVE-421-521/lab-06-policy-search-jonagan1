@@ -50,9 +50,11 @@ using Unitful
 Plots.default(; margin=5Plots.mm)
 ```
 
+
+## Objective Function
 ```{julia}
-function objective_function(a::AbstractFloat)
-    slr_scenarios = let
+Random.seed!(2024)
+slr_scenarios = let
     df = CSV.read("data/slr_oddo.csv", DataFrame)
     [Oddo17SLR(a, b, c, tstar, cstar) for (a, b, c, tstar, cstar) in eachrow(df)]
 end
@@ -78,13 +80,65 @@ function draw_discount_rate()
     return 0.0
 end
 
-N_SOW = 100
+N_SOW = 100000
 sows = [
     SOW(rand(slr_scenarios), draw_surge_distribution(), draw_discount_rate()) for
     _ in 1:N_SOW
-] # for 10 SOWs
+]
 
+N_SOW_opt = 10
 
-    
+function objective_function(a::AbstractFloat)
+    sow_opt = sows[1:N_SOW_opt]
+    actions = [Action(a.*1u"ft") for _ in 1:N_SOW_opt]
+    results = [run_sim(actions, s, p) for (actions, s) in zip(actions, sow_opt)]
+    res = sum(results)*-1
+    return res
 end
+
+test1 = objective_function(2.0)
+println(test1)
+test2 = objective_function(0.0)
+println(test2)
+test3 = objective_function(10.0)
+println(test3)
+
+```
+
+
+## Optimization 
+```{julia}
+f(x) = objective_function.(x)
+#= let
+   #=  # Generate a grid of points for the surface plot
+    x = range(-5.0; stop=5.0, length=1000)
+    y = range(-5.0; stop=5.0, length=1000)
+    z = [f([i, j]) for i in x, j in y]
+
+    # Create the surface plot
+    surface(
+        x, y, z; xlabel="x1", ylabel="x2", zlabel="f(x)", title=L"Minimize $f(x)$ for $D=2$" =#
+    )
+end  =#
+
+D = 10
+bounds = boxconstraints(; lb=-5ones(D), ub=5ones(D))
+
+options = Options(; time_limit=10.0)
+
+algorithm = ECA(; options=options)
+
+result = optimize(f, bounds, algorithm)
+```
+
+## Result Validation 
+```{julia}
+heights = 1.0:14.0 # some heights we will consider
+plot(
+    heights,
+    objective_function.(heights);
+    xlabel="Elevation",
+    ylabel="NPV",
+    title="Elevation and NPV",
+)
 ```
